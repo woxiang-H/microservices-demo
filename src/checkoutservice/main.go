@@ -33,6 +33,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	openzipkin "github.com/openzipkin/zipkin-go"
+        zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
+        "contrib.go.opencensus.io/exporter/zipkin"
+
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/genproto"
 	money "github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -140,6 +144,26 @@ func initJaegerTracing() {
 	log.Info("jaeger initialization completed.")
 }
 
+func initZipkinTracing() {
+
+        svcAddr := os.Getenv("ZIPKIN_SERVICE_ADDR")
+        if svcAddr == "" {
+                log.Info("zipkin initialization disabled.")
+                return
+        }
+
+        // Register the Jaeger exporter to be able to retrieve
+        // the collected spans.
+        localEndpoint, err := openzipkin.NewEndpoint("checkoutservice", "0.0.0.0:5454")
+        if err != nil {
+                log.Fatal(err)
+        }
+        reporter := zipkinHTTP.NewReporter(svcAddr)
+        exporter := zipkin.NewExporter(reporter, localEndpoint)
+        trace.RegisterExporter(exporter)
+        log.Info("zipkin initialization completed.")
+}
+
 func initStats(exporter *stackdriver.Exporter) {
 	view.SetReportingPeriod(60 * time.Second)
 	view.RegisterExporter(exporter)
@@ -174,6 +198,7 @@ func initStackdriverTracing() {
 
 func initTracing() {
 	initJaegerTracing()
+	initZipkinTracing()
 	initStackdriverTracing()
 }
 
@@ -233,7 +258,8 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		Nanos: 0}
 	total = money.Must(money.Sum(total, *prep.shippingCostLocalized))
 	for _, it := range prep.orderItems {
-		total = money.Must(money.Sum(total, *it.Cost))
+		multPrice := money.MultiplySlow(*it.Cost, uint32(it.GetItem().GetQuantity()))
+		total = money.Must(money.Sum(total, multPrice))
 	}
 
 	txID, err := cs.chargeCard(ctx, &total, req.CreditCard)

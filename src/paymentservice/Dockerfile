@@ -29,6 +29,30 @@ COPY package*.json ./
 
 RUN npm install --only=production
 
+RUN npm install @opencensus/core
+
+RUN npm install @opencensus/nodejs
+
+RUN npm install @opencensus/exporter-jaeger
+
+RUN npm i @opencensus/exporter-zipkin
+
+RUN npm install --save @opentelemetry/exporter-jaeger
+
+RUN npm install --save @opentelemetry/tracing
+
+RUN npm install --save @opentelemetry/metrics
+
+RUN npm install --save @opentelemetry/exporter-prometheus
+
+RUN npm install --save @opentelemetry/api
+
+RUN npm install --save @opentelemetry/node
+
+RUN npm install --save @opentelemetry/plugin-grpc
+
+RUN npm install --save @opentelemetry/plugin-http
+
 FROM base
 
 RUN GRPC_HEALTH_PROBE_VERSION=v0.2.0 && \

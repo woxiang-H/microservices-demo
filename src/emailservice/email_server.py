@@ -29,11 +29,16 @@ import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 
-from opencensus.trace.exporters import stackdriver_exporter
-from opencensus.trace.exporters import print_exporter
-from opencensus.trace.ext.grpc import server_interceptor
-from opencensus.common.transports.async_ import AsyncTransport
-from opencensus.trace.samplers import always_on
+#from opencensus.trace.exporters import stackdriver_exporter
+#from opencensus.trace.exporters import print_exporter
+#from opencensus.trace.ext.grpc import server_interceptor
+#from opencensus.common.transports.async_ import AsyncTransport
+#from opencensus.trace.samplers import always_on
+from opencensus.trace import samplers
+from opencensus.ext.grpc import server_interceptor
+from opencensus.ext.jaeger.trace_exporter import JaegerExporter
+from opencensus.ext.zipkin.trace_exporter import ZipkinExporter
+from opencensus.trace.tracer import Tracer
 
 # import googleclouddebugger
 import googlecloudprofiler
@@ -192,6 +197,42 @@ if __name__ == '__main__':
       tracer_interceptor = server_interceptor.OpenCensusServerInterceptor(sampler, exporter)
   except (KeyError, DefaultCredentialsError):
       logger.info("Tracing disabled.")
+      tracer_interceptor = server_interceptor.OpenCensusServerInterceptor()
+
+  ## Jaeger
+  #try:
+  #  if "DISABLE_JAEGER" in os.environ:
+  #    raise keyError()
+  #  else:
+  #    logger.info("Jaeger enabled.")
+  #    je = JaegerExporter(
+  #      service_name="emailservice",
+  #      host_name="jaeger-collector",
+  #      agent_port=6831,
+  #      endpoint="/api/traces")
+  #    tracer = Tracer(exporter=je)
+  #    with tracer.span(name="jaegerwork") as span:
+  #      for i in range(10):
+  #        pass
+  #except KeyError:
+  #    logger.info("Jaeger disabled.")
+
+  # Zipkin
+  try:
+    if "DISABLE_ZIPKIN" in os.environ:
+      raise keyError()
+    else:
+      logger.info("zipkin enabled.")
+      sampler = samplers.AlwaysOnSampler()
+      ze = ZipkinExporter(
+        service_name="emailservice",
+        host_name=os.environ.get('ZIPKIN_SERVICE_ADDR'),
+        port=os.environ.get('ZIPKIN_SERVICE_PORT'),
+        endpoint="/api/v2/spans")
+      tracer = Tracer(exporter=ze)
+      tracer_interceptor = server_interceptor.OpenCensusServerInterceptor(sampler, ze)
+  except KeyError:
+      logger.info("Zipkin disabled.")
       tracer_interceptor = server_interceptor.OpenCensusServerInterceptor()
 
   start(dummy_mode = True)

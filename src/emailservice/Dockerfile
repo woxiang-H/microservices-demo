@@ -24,6 +24,8 @@ RUN apt-get -qq update \
 # get packages
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install opencensus-ext-jaeger opencensus-ext-zipkin opencensus==0.7.11
+RUN pip install opencensus-ext-grpc
 
 FROM base as final
 # Enable unbuffered logging
@@ -47,6 +49,7 @@ COPY --from=builder /usr/local/lib/python3.7/ /usr/local/lib/python3.7/
 
 # Add the application
 COPY . .
+COPY __init__.py /usr/local/lib/python3.7/site-packages/opencensus/ext/zipkin/trace_exporter/
 
 EXPOSE 8080
 ENTRYPOINT [ "python", "email_server.py" ]

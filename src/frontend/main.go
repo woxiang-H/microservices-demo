@@ -33,6 +33,10 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+	
+	openzipkin "github.com/openzipkin/zipkin-go"
+	zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
+	"contrib.go.opencensus.io/exporter/zipkin"
 )
 
 const (
@@ -177,6 +181,26 @@ func initJaegerTracing(log logrus.FieldLogger) {
 	log.Info("jaeger initialization completed.")
 }
 
+func initZipkinTracing(log logrus.FieldLogger) {
+
+	svcAddr := os.Getenv("ZIPKIN_SERVICE_ADDR")
+	if svcAddr == "" {
+		log.Info("zipkin initialization disabled.")
+		return
+	}
+
+	// Register the Jaeger exporter to be able to retrieve
+	// the collected spans.
+	localEndpoint, err := openzipkin.NewEndpoint("frontend", "0.0.0.0:5454")
+	if err != nil {
+		log.Fatal(err)
+	}
+	reporter := zipkinHTTP.NewReporter(svcAddr)
+	exporter := zipkin.NewExporter(reporter, localEndpoint)
+	trace.RegisterExporter(exporter)
+	log.Info("zipkin initialization completed.")
+}
+
 func initStats(log logrus.FieldLogger, exporter *stackdriver.Exporter) {
 	view.SetReportingPeriod(60 * time.Second)
 	view.RegisterExporter(exporter)
@@ -226,6 +250,7 @@ func initTracing(log logrus.FieldLogger) {
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
 	initJaegerTracing(log)
+	initZipkinTracing(log)
 	initStackdriverTracing(log)
 
 }

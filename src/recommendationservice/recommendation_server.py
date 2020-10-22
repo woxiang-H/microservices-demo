@@ -24,11 +24,16 @@ import googleclouddebugger
 import googlecloudprofiler
 from google.auth.exceptions import DefaultCredentialsError
 import grpc
-from opencensus.trace.exporters import print_exporter
-from opencensus.trace.exporters import stackdriver_exporter
-from opencensus.trace.ext.grpc import server_interceptor
-from opencensus.common.transports.async_ import AsyncTransport
-from opencensus.trace.samplers import always_on
+#from opencensus.trace.exporters import print_exporter
+#from opencensus.trace.exporters import stackdriver_exporter
+#from opencensus.trace.ext.grpc import server_interceptor
+#from opencensus.common.transports.async_ import AsyncTransport
+#from opencensus.trace.samplers import always_on
+from opencensus.trace import samplers
+from opencensus.ext.grpc import server_interceptor
+from opencensus.ext.jaeger.trace_exporter import JaegerExporter
+from opencensus.ext.zipkin.trace_exporter import ZipkinExporter
+from opencensus.trace import tracer as tracer_module
 
 import demo_pb2
 import demo_pb2_grpc
@@ -130,6 +135,42 @@ if __name__ == "__main__":
             pass
     except KeyError:
         logger.info("Debugger disabled.")
+
+    ## Jaeger
+    #try:
+    #  if "DISABLE_JAEGER" in os.environ:
+    #    raise keyError()
+    #  else:
+    #    logger.info("Jaeger enabled.")
+    #    je = JaegerExporter(
+    #      service_name="recommendationservice",
+    #      host_name="jaeger-collector",
+    #      agent_port=6831,)
+    #    tracer = tracer_module.Tracer(exporter=je)
+    #    with tracer.span(name="jaegerwork") as span:
+    #      for i in range(10):
+    #        pass
+    #except KeyError:
+    #    logger.info("Jaeger disabled.")
+
+    # Zipkin
+    try:
+      if "DISABLE_ZIPKIN" in os.environ:
+        raise keyError()
+      else:
+        logger.info("zipkin enabled.")
+        sampler = samplers.AlwaysOnSampler()
+        ze = ZipkinExporter(
+          service_name="recommendationservice",
+          host_name=os.environ.get('ZIPKIN_SERVICE_ADDR', "zipkin"),
+          port=os.environ.get('ZIPKIN_SERVICE_PORT', "9411"),
+          endpoint="/api/v2/spans")
+        tracer = tracer_module.Tracer(exporter=ze)
+        tracer_interceptor = server_interceptor.OpenCensusServerInterceptor(sampler, ze)
+    except KeyError:
+        logger.info("Zipkin disabled.")
+        tracer_interceptor = server_interceptor.OpenCensusServerInterceptor()
+
 
     port = os.environ.get('PORT', "8080")
     catalog_addr = os.environ.get('PRODUCT_CATALOG_SERVICE_ADDR', '')

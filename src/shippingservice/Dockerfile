@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.12-alpine as builder
-RUN apk add --no-cache ca-certificates git && \
-      wget -qO/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && \
-      chmod +x /go/bin/dep
-
-ENV PROJECT github.com/GoogleCloudPlatform/microservices-demo/src/shippingservice
-WORKDIR /go/src/$PROJECT
+FROM golang:1.15-alpine as builder
+RUN apk add --no-cache ca-certificates git
+WORKDIR /src
 
 # restore dependencies
-COPY Gopkg.* ./
-RUN dep ensure --vendor-only -v
+COPY go.mod go.sum ./
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN go env -w GOPRIVATE=.gitlab.com,.gitee.com
+RUN go env -w GOSUMDB="sum.golang.google.cn"
+RUN go mod download
 COPY . .
-RUN go install .
+RUN go build -o /go/bin/shippingservice
 
 FROM alpine as release
 RUN apk add --no-cache ca-certificates

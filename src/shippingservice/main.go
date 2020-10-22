@@ -17,12 +17,14 @@ package main
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"time"
 
 	"cloud.google.com/go/profiler"
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
@@ -32,6 +34,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+
+	openzipkin "github.com/openzipkin/zipkin-go"
+        zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
+        "contrib.go.opencensus.io/exporter/zipkin"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/shippingservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -71,6 +77,13 @@ func main() {
 	} else {
 		log.Info("Profiling disabled.")
 	}
+
+	if os.Getenv("DISABLE_PROMETHEUS") == "" {
+                log.Info("Prometheus enabled.")
+                go initPrometheus(log)
+        } else {
+                log.Info("Prometheus disabled.")
+        }
 
 	port := defaultPort
 	if value, ok := os.LookupEnv("PORT"); ok {
@@ -154,6 +167,23 @@ func (s *server) ShipOrder(ctx context.Context, in *pb.ShipOrderRequest) (*pb.Sh
 	}, nil
 }
 
+func initPrometheus(log logrus.FieldLogger) {
+        pe, err := prometheus.NewExporter(prometheus.Options{
+                Namespace: "demo",
+        })
+        if err != nil {
+                log.Fatal("Failed to create Prometheus exporter: %v", err)
+        }
+
+        go func() {
+                mux := http.NewServeMux()
+                mux.Handle("/metrics", pe)
+                if err := http.ListenAndServe(":8888", mux); err != nil {
+                        log.Fatal("Failed to run Prometheus /Metrics endpoint: %v", err)
+                }
+        }()
+}
+
 func initJaegerTracing() {
 	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
 	if svcAddr == "" {
@@ -174,6 +204,26 @@ func initJaegerTracing() {
 	}
 	trace.RegisterExporter(exporter)
 	log.Info("jaeger initialization completed.")
+}
+
+func initZipkinTracing() {
+
+        svcAddr := os.Getenv("ZIPKIN_SERVICE_ADDR")
+        if svcAddr == "" {
+                log.Info("zipkin initialization disabled.")
+                return
+        }
+
+        // Register the Jaeger exporter to be able to retrieve
+        // the collected spans.
+        localEndpoint, err := openzipkin.NewEndpoint("shippingservice", "0.0.0.0:5454")
+        if err != nil {
+                log.Fatal(err)
+        }
+        reporter := zipkinHTTP.NewReporter(svcAddr)
+        exporter := zipkin.NewExporter(reporter, localEndpoint)
+        trace.RegisterExporter(exporter)
+        log.Info("zipkin initialization completed.")
 }
 
 func initStats(exporter *stackdriver.Exporter) {
@@ -211,6 +261,7 @@ func initStackdriverTracing() {
 
 func initTracing() {
 	initJaegerTracing()
+	initZipkinTracing()
 	initStackdriverTracing()
 }
 

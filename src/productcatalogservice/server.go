@@ -43,6 +43,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	
+	openzipkin "github.com/openzipkin/zipkin-go"
+        zipkinHTTP "github.com/openzipkin/zipkin-go/reporter/http"
+        "contrib.go.opencensus.io/exporter/zipkin"
 )
 
 var (
@@ -170,6 +174,26 @@ func initJaegerTracing() {
 	log.Info("jaeger initialization completed.")
 }
 
+func initZipkinTracing() {
+
+        svcAddr := os.Getenv("ZIPKIN_SERVICE_ADDR")
+        if svcAddr == "" {
+                log.Info("zipkin initialization disabled.")
+                return
+        }
+
+        // Register the Jaeger exporter to be able to retrieve
+        // the collected spans.
+        localEndpoint, err := openzipkin.NewEndpoint("productcatalogservice", "0.0.0.0:5454")
+        if err != nil {
+                log.Fatal(err)
+        }
+        reporter := zipkinHTTP.NewReporter(svcAddr)
+        exporter := zipkin.NewExporter(reporter, localEndpoint)
+        trace.RegisterExporter(exporter)
+        log.Info("zipkin initialization completed.")
+}
+
 func initStats(exporter *stackdriver.Exporter) {
 	view.SetReportingPeriod(60 * time.Second)
 	view.RegisterExporter(exporter)
@@ -205,6 +229,7 @@ func initStackdriverTracing() {
 
 func initTracing() {
 	initJaegerTracing()
+	initZipkinTracing()
 	initStackdriverTracing()
 }
 

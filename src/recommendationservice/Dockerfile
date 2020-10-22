@@ -28,9 +28,12 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.2.0 && \
 WORKDIR /recommendationservice
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
+RUN pip install opencensus-ext-jaeger opencensus-ext-zipkin opencensus==0.7.11 opencensus-ext-grpc
+
 
 # add files into working directory
 COPY . .
+COPY __init__.py /usr/local/lib/python2.7/site-packages/opencensus/ext/zipkin/trace_exporter/
 
 # set listen port
 ENV PORT "8080"
