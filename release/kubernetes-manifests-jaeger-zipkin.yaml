@@ -515,7 +515,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: main
-        image: alanliuxiang/google-samples-microservices-demo-loadgenerator:latest
+        image: woxiang/loadgenerator:v1
         #imagePullPolicy: Never
         env:
         - name: FRONTEND_ADDR
