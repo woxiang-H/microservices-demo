@@ -34,6 +34,8 @@ import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import io.opencensus.exporter.trace.jaeger.JaegerExporterConfiguration;
 import io.opencensus.exporter.trace.jaeger.JaegerTraceExporter;
+import io.opencensus.exporter.trace.zipkin.ZipkinExporterConfiguration;
+import io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter;
 import io.opencensus.exporter.trace.stackdriver.StackdriverTraceConfiguration;
 import io.opencensus.exporter.trace.stackdriver.StackdriverTraceExporter;
 import io.opencensus.trace.AttributeValue;
@@ -311,6 +313,22 @@ public final class AdService {
     }
   }
 
+  private static void initZipkin() {
+    String zipkinAddr = System.getenv("ZIPKIN_SERVICE_ADDR");
+    if (zipkinAddr != null && !zipkinAddr.isEmpty()) {
+      String zipkinUrl = String.format("http://%s/api/v2/spans", zipkinAddr);
+      // Register Jaeger Tracing.
+      ZipkinTraceExporter.createAndRegister(
+          ZipkinExporterConfiguration.builder()
+              .setV2Url(zipkinUrl)
+              .setServiceName("adservice")
+              .build());
+      logger.info("Zipkin initialization complete.");
+    } else {
+      logger.info("Zipkin initialization disabled.");
+    }
+  }
+
   /** Main launches the server from the command line. */
   public static void main(String[] args) throws IOException, InterruptedException {
     // Registers all RPC views.
@@ -332,6 +350,7 @@ public final class AdService {
 
     // Register Jaeger
     initJaeger();
+    initZipkin();
 
     // Start the RPC server. You shouldn't see any output from gRPC before this.
     logger.info("AdService starting.");

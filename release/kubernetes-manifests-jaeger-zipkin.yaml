@@ -724,7 +724,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: alanliuxiang/gcr.io-google-samples-microservices-demo-adservice:latest
+        image: woxiang/adservice:v1
         #imagePullPolicy: Never
         ports:
         - containerPort: 9555
@@ -737,6 +737,8 @@ spec:
         #   value: "1"
         - name: JAEGER_SERVICE_ADDR
           value: "jaeger-collector:14268"
+        - name: ZIPKIN_SERVICE_ADDR
+          value: "zipkin:9411"
         resources:
           requests:
             cpu: 200m
