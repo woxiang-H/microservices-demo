@@ -30,6 +30,10 @@ import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import io.opencensus.exporter.trace.stackdriver.StackdriverTraceConfiguration;
 import io.opencensus.exporter.trace.stackdriver.StackdriverTraceExporter;
+import io.opencensus.exporter.trace.jaeger.JaegerExporterConfiguration;
+import io.opencensus.exporter.trace.jaeger.JaegerTraceExporter;
+import io.opencensus.exporter.trace.zipkin.ZipkinExporterConfiguration;
+import io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter;
 import io.opencensus.trace.Span;
 import io.opencensus.trace.Tracer;
 import io.opencensus.trace.Tracing;
@@ -160,6 +164,30 @@ public class AdServiceClient {
       }
     }
 
+    String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
+    if (jaegerAddr != null && !jaegerAddr.isEmpty()) {
+      String jaegerUrl = String.format("http://%s/api/traces", jaegerAddr);
+      JaegerTraceExporter.createAndRegister(
+          JaegerExporterConfiguration.builder()
+              .setThriftEndpoint(jaegerUrl)
+              .setServiceName("adservice")
+              .build());
+      logger.info("Jaeger initialization complete.");
+    } else {
+      logger.info("Jaeger initialization disabled.");
+    }
+    String zipkinAddr = System.getenv("ZIPKIN_SERVICE_ADDR");
+    if (zipkinAddr != null && !zipkinAddr.isEmpty()) {
+      String zipkinUrl = String.format("http://%s/api/v2/spans", zipkinAddr);
+      ZipkinTraceExporter.createAndRegister(
+          ZipkinExporterConfiguration.builder()
+              .setV2Url(zipkinUrl)
+              .setServiceName("adservice")
+              .build());
+      logger.info("Zipkin initialization complete.");
+    } else {
+      logger.info("Zipkin initialization disabled.");
+    }
     // Register Prometheus exporters and export metrics to a Prometheus HTTPServer.
     // PrometheusStatsCollector.createAndRegister();
 

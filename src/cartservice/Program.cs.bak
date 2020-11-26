@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +21,6 @@ using cartservice.interfaces;
 using CommandLine;
 using Grpc.Core;
 using Microsoft.Extensions.Configuration;
-using OpenTelemetry.Trace;
 
 namespace cartservice
 {
@@ -30,7 +29,6 @@ namespace cartservice
         const string CART_SERVICE_ADDRESS = "LISTEN_ADDR";
         const string REDIS_ADDRESS = "REDIS_ADDR";
         const string CART_SERVICE_PORT = "PORT";
-        const string ZIPKIN_ADDRESS = "ZIPKIN_ADDR";
 
         [Verb("start", HelpText = "Starts the server listening on provided port")]
         class ServerOptions
@@ -43,9 +41,6 @@ namespace cartservice
 
             [Option('r', "redis", HelpText = "The ip of redis cache")]
             public string Redis { get; set; }
-
-            [Option('z', "zipkin", HelpText = "The ip of zipkin cache")]
-            public string Zipkin { get; set; }
         }
 
         static object StartServer(string host, int port, ICartStore cartStore)
@@ -77,13 +72,6 @@ namespace cartservice
 
                     Console.WriteLine("Initialization completed");
 
-                    // zipkinuri = Environment.GetEnvironmentVariable(ZIPKIN_ADDRESS);
-                    // if (!string.IsNullOrEmpty(zipkinuri))
-                    // {
-	            //     Console.WriteLine(zipkinuri);
-	            //     Zipkin.Run(zipkinuri);
-                    // }
-
                     // Keep the server up and running
                     while(true)
                     {
@@ -106,7 +94,7 @@ namespace cartservice
                 Console.WriteLine("Invalid number of arguments supplied");
                 Environment.Exit(-1);
             }
-	
+
             switch (args[0])
             {
                 case "start":

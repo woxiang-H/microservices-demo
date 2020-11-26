@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using OpenCensus.Collector.StackExchangeRedis;
+using OpenCensus.Exporter.Zipkin;
+using OpenCensus.Trace;
+using OpenCensus.Trace.Config;
+using OpenCensus.Trace.Sampler;
+using StackExchange.Redis;
+
+namespace cartservice
+{
+    internal class Zipkin
+    {
+        internal static object Run(redisoptions)
+	{
+	    string zipkinUri = Environment.GetEnvironmentVariable("ZIPKIN_ADDR");
+	    var exporter = new ZipkinTraceExporter(
+	        new ZipkinTraceExporterOptions()
+	        {
+	            Endpoint = new Uri(zipkinUri),
+	            ServiceName = "cartservice",
+	        },
+	        Tracing.ExportComponent);
+	    exporter.Start();
+	    // Console.WriteLine(zipkinUri);
+	    ITraceConfig traceConfig = Tracing.TraceConfig;
+	    ITraceParams currentConfig = traceConfig.ActiveTraceParams;
+	    var newConfig = currentConfig.ToBuilder()
+		.SetSampler(Samplers.AlwaysSample)
+		.Build();
+	    traceConfig.UpdateActiveTraceParams(newConfig);
+	    var tracer = Tracing.Tracer;
+	    var collector = new StackExchangeRedisCallsCollector(null, tracer, null, Tracing.ExportComponent);
+	    // ConnectionMultiplexer connection = ConnectionMultiplexer.Connect(Environment.GetEnvironmentVariable("REDIS_ADDR"));
+	    ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(redisoptions);
+	    redis.RegisterProfiler(collector.GetProfilerSessionsFactory());
+	    Tracing.ExportComponent.SpanExporter.Dispose();
+	    return null;
+	}
+    }
+}

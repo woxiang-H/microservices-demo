@@ -33,7 +33,7 @@ spec:
       containers:
       - name: server
         image: woxiang/emailservice:v2
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         env:
@@ -92,7 +92,7 @@ spec:
       containers:
         - name: server
           image: woxiang/checkoutservice:v1
-          #imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -164,7 +164,7 @@ spec:
       containers:
       - name: server
         image: woxiang/recommendationservice:v2
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -229,7 +229,7 @@ spec:
       containers:
         - name: server
           image: woxiang/frontend:v1
-          #imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 8080
           - containerPort: 8888
@@ -337,7 +337,7 @@ spec:
       containers:
       - name: server
         image: woxiang/paymentservice:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
         - containerPort: 9464
@@ -395,7 +395,7 @@ spec:
       containers:
       - name: server
         image: woxiang/productcatalogservice:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3550
         env:
@@ -455,7 +455,7 @@ spec:
       containers:
       - name: server
         image: woxiang/cartservice:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070
         env:
@@ -516,7 +516,7 @@ spec:
       containers:
       - name: main
         image: woxiang/loadgenerator:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
@@ -547,7 +547,7 @@ spec:
       containers:
       - name: server
         image: woxiang/currencyservice:v2
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - name: grpc
           containerPort: 7000
@@ -609,7 +609,7 @@ spec:
       containers:
       - name: server
         image: woxiang/shippingservice:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
         - containerPort: 8888
@@ -670,7 +670,7 @@ spec:
       containers:
       - name: redis
         image: redis:alpine
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -725,7 +725,7 @@ spec:
       containers:
       - name: server
         image: woxiang/adservice:v1
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9555
         env:
@@ -786,7 +786,7 @@ spec:
       containers:
       - name: server
         image: jaegertracing/all-in-one:1.6
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         env:
         - name: COLLECTOR_ZIPKIN_HTTP_PORT
           value: "9411"
@@ -869,7 +869,7 @@ spec:
       containers:
       - name: server
         image: openzipkin/zipkin:latest
-        #imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9411
           protocol: TCP
